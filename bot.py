@@ -86,3 +86,10 @@ def handle_message(message):
 
 print("Prince Telecom Bot ইজ রানিং...")
 bot.infinity_polling()
+import os
+# ... অন্যান্য কোড ...
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    # আপনার বটের পোলিং শুরু করুন
+    bot.infinity_polling()
+    
