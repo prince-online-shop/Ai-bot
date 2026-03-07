@@ -87,9 +87,24 @@ def handle_message(message):
 print("Prince Telecom Bot ইজ রানিং...")
 bot.infinity_polling()
 import os
-# ... অন্যান্য কোড ...
+from flask import Flask
+from threading import Thread
+
+# রেন্ডারের জন্য ফেক সার্ভার
+server = Flask('')
+
+@server.route('/')
+def home():
+    return "Bot is running!"
+
+def run():
+    server.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+
+def keep_alive():
+    t = Thread(target=run)
+    t.start()
+
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    # আপনার বটের পোলিং শুরু করুন
+    keep_alive()  # ফেক সার্ভার চালু করা
+    print("বট চালু হয়েছে...")
     bot.infinity_polling()
-    
