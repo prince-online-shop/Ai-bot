@@ -123,4 +123,4 @@ def handle_all_messages(message):
 
 if __name__ == "__main__":
     keep_alive() # রেন্ডারের জন্য
-    bot.infinity_polling()
+    bot.infinity_polling(timeout=90, long_polling_timeout=90)
