@@ -76,7 +76,7 @@ def get_customer_markup():
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
     markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
-    markup.add('📱 ড্রাইভ অফার', '💰 টাকা অ্যাড', '📞 সাপোর্ট')
+    markup.add('📞কাস্টমার সাপোর্ট')
     bot.reply_to(message, "**আসসালামু আলাইকুম**\nসম্মানিত গ্রাহক,\nপ্রিন্স টেলিকমে আপনাকে স্বাগতম। আজ আপনাকে কীভাবে সাহায্য করতে পারি?", reply_markup=markup, parse_mode='Markdown')
 
 @bot.message_handler(func=lambda message: True)
