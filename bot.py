@@ -1,16 +1,18 @@
+import os
 import telebot
 from groq import Groq
-from telebot import types
+from flask import Flask
+from threading import Thread
 
-# --- কনফিগারেশন ---
-BOT_TOKEN = "YOUR_TELEGRAM_BOT_TOKEN"
-GROQ_API_KEY = "YOUR_GROQ_API_KEY"
+# --- টোকেন কনফিগারেশন ---
+# রেন্ডার ড্যাশবোর্ড থেকে Environment Variables এ এই নামগুলো সেট করবেন
+BOT_TOKEN = os.environ.get('BOT_TOKEN')
+GROQ_API_KEY = os.environ.get('GROQ_API_KEY')
 
-# ক্লায়েন্ট সেটআপ
 client = Groq(api_key=GROQ_API_KEY)
 bot = telebot.TeleBot(BOT_TOKEN)
 
-# --- আপনার দেওয়া Bot AI Instructions ---
+# --- আপনার দেওয়া পূর্ণাঙ্গ System Prompt ও Knowledge ---
 SYSTEM_PROMPT = """
 তুমি প্রিন্স টেলিকম অ্যাপের একটি স্মার্ট এবং ভদ্র AI কাস্টমার সাপোর্ট অ্যাসিস্ট্যান্ট। তোমার কাজ হলো অ্যাপ ব্যবহারকারীদের প্রশ্নের উত্তর দেওয়া এবং তাদের সমস্যার সমাধান করতে সাহায্য করা।
 
@@ -28,6 +30,7 @@ SYSTEM_PROMPT = """
 ১. শুধুমাত্র নিচে দেওয়া 'Bot Knowledge' এর তথ্য ব্যবহার করবে। 
 ২. বাইরে থেকে কোনো তথ্য বা অনুমান করে কোনো উত্তর দিবে না।
 ৩. অ্যাপের বাইরের কোনো প্রশ্ন করলে বলবে: "আমি আন্তরিকভাবে দুঃখিত। আমি শুধুমাত্র আমাদের অ্যাপ ও সার্ভিস সংক্রান্ত তথ্য দিয়ে সহায়তা করতে পারি। অন্য কোনো বিষয়ে সাহায্য করতে পারছি না। ধন্যবাদ।"
+৪. যদি কোনো প্রশ্নের উত্তর Knowledge-এ না থাকে তবে বলবে: "আমি আন্তরিকভাবে দুঃখিত। এই বিষয়ে এই মুহূর্তে আমার কাছে তথ্য নেই। অনুগ্রহ করে আমাদের হেল্পলাইন সাপোর্টে একটি টিকিট ওপেন করুন। আমাদের টিম দ্রুত সাহায্য করবে।"
 
 --- Bot Knowledge ---
 [সাধারণ তথ্য]
@@ -35,72 +38,68 @@ SYSTEM_PROMPT = """
 
 [একাউন্ট খোলা]
 - নতুন একাউন্ট: অ্যাপে গিয়ে ফরমটা ঠিকমতো পূরণ করে সাবমিট করলেই হবে। ভিডিও: https://youtube.com/shorts/IyDo7Vd5C88
+- লগইন সমস্যা: রেজিস্ট্রেশনের সময় "Try Again" আসলে বুঝবেন একাউন্ট হয়ে গেছে। তখন নম্বর ও ৬ সংখ্যার পাসওয়ার্ড দিয়ে লগইন করুন।
+
+[লগইন পাসওয়ার্ড পিন পরিবর্তন]
+- পাসওয়ার্ড/পিন ভুলে গেলে বা পরিবর্তন: লগ ইন পেজে "Forgot password/pin?" এ ক্লিক করুন। মোবাইল নাম্বার দিয়ে OTP নিন। পাসওয়ার্ড বা পিন যেটা বদলাতে চান সেটির উপর চাপ দিয়ে নতুন কোড বসিয়ে পরিবর্তন করুন। ভিডিও: https://youtu.be/B65oIt8AfJA?si=Se5cIAcJMRKRnX2w
 
 [টাকা ও ব্যালেন্স]
 - ব্যালেন্সের ধরন: মেইন ব্যালেন্স দিয়ে শুধু সাধারণ রিচার্জ ও রেগুলার প্যাক কেনা যায়। বাকি সব কিছুর জন্য ড্রাইভ ব্যালেন্স লাগবে।
 - টাকা অ্যাড করার নিয়ম: অ্যাপের 'Add Balance' এ যান। পেমেন্ট মেথড ও টাকার পরিমাণ লিখে নিচের নাম্বারে টাকা পাঠান। ট্রানজেকশন আইডি বসিয়ে ভেরিফাই করুন। ভিডিও: https://youtube.com/shorts/3iB7JL-nFhg
-- টাকা অ্যাড না হলে: সাপোর্ট টিমে (@Prince_Telecom_officialbot) যোগাযোগ করুন।
+- টাকা অ্যাড না হলে: চিন্তা করবেন না। আমাদের সাপোর্ট টিমে (@Prince_Telecom_officialbot) 'Add Balance' অপশন থেকে একটি টিকিট ওপেন করুন।
 
 [অফার ও রিচার্জের সময়]
 - রিচার্জ ও প্যাক: ২-৫ সেকেন্ডে সাকসেস হয়।
 - ড্রাইভ অফার: রবি/এয়ারটেল ৫-১০ মিনিট। জিপি/বাংলালিংক ১৫-২৫ মিনিট। ধৈর্য ধরুন। 😊
+- ৩০ মিনিট হয়ে গেলে: আমাদের হেল্পলাইন বটে (@Prince_Telecom_officialbot) 'Drive Offer' অপশন থেকে টিকিট ওপেন করুন।
+
+[বিল ও গেমিং]
+- বিদ্যুৎ বিল: ২-১০ মিনিটে সাকসেস হয়। ফ্রি একাউন্ট ৫ টাকা, ডায়মন্ড ৩ টাকা চার্জ, বিজনেস একাউন্ট ফ্রি।
+- গেম টপআপ: ভিজিট করুন www.princetopup.com
 """
 
-# স্টার্ট মেসেজ
-@bot.message_handler(commands=['start'])
-def send_welcome(message):
-    markup = types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
-    item1 = types.KeyboardButton('📱 ড্রাইভ অফার')
-    item2 = types.KeyboardButton('💰 টাকা অ্যাড')
-    item3 = types.KeyboardButton('📞 সাপোর্ট')
-    markup.add(item1, item2, item3)
-    
-    welcome_text = "**আসসালামু আলাইকুম**\nসম্মানিত গ্রাহক,\nপ্রিন্স টেলিকমে আপনাকে স্বাগতম। আজ আপনাকে কীভাবে সাহায্য করতে পারি?"
-    bot.reply_to(message, welcome_text, reply_markup=markup, parse_mode='Markdown')
+# --- ২৪ ঘণ্টা সচল রাখার জন্য Flask সার্ভার ---
+app = Flask('')
 
-# Groq AI এর মাধ্যমে উত্তর জেনারেট করা
-def get_ai_response(user_query):
-    try:
-        completion = client.chat.completions.create(
-            model="llama-3.3-70b-versatile", # দ্রুত এবং নির্ভুল উত্তরের জন্য সেরা
-            messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": user_query}
-            ],
-            temperature=0.7,
-            max_tokens=500
-        )
-        return completion.choices[0].message.content
-    except Exception as e:
-        print(f"Error: {e}")
-        return "দুঃখিত, আমি এই মুহূর্তে উত্তর দিতে পারছি না। অনুগ্রহ করে কিছুক্ষণ পর চেষ্টা করুন।"
-
-# মেসেজ হ্যান্ডলার
-@bot.message_handler(func=lambda message: True)
-def handle_message(message):
-    user_query = message.text
-    response_text = get_ai_response(user_query)
-    bot.reply_to(message, response_text)
-
-print("Prince Telecom Bot (Groq AI) ইজ রানিং...")
-bot.infinity_polling()
-import os
-from flask import Flask
-from threading import Thread
-
-server = Flask('')
-
-@server.route('/')
+@app.route('/')
 def home():
-    return "Prince Telecom Bot is Running!"
+    return "Prince Telecom Bot is Active!"
 
 def run():
-    server.run(host='0.0.0.0', port=8080)
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))
 
 def keep_alive():
     t = Thread(target=run)
     t.start()
 
+# --- বট হ্যান্ডলার ---
+@bot.message_handler(commands=['start'])
+def send_welcome(message):
+    markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
+    item1 = telebot.types.KeyboardButton('📱 ড্রাইভ অফার')
+    item2 = telebot.types.KeyboardButton('💰 টাকা অ্যাড')
+    item3 = telebot.types.KeyboardButton('📞 সাপোর্ট')
+    markup.add(item1, item2, item3)
+    
+    welcome_text = "**আসসালামু আলাইকুম**\nসম্মানিত গ্রাহক,\nপ্রিন্স টেলিকমে আপনাকে স্বাগতম। আজ আপনাকে কীভাবে সাহায্য করতে পারি?"
+    bot.reply_to(message, welcome_text, reply_markup=markup, parse_mode='Markdown')
+
+@bot.message_handler(func=lambda message: True)
+def handle_message(message):
+    try:
+        completion = client.chat.completions.create(
+            model="llama-3.3-70b-versatile", # লেটেস্ট এবং ফাস্ট মডেল
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": message.text}
+            ]
+        )
+        bot.reply_to(message, completion.choices[0].message.content)
+    except Exception as e:
+        print(f"Error: {e}")
+        bot.reply_to(message, "আমি আন্তরিকভাবে দুঃখিত। সার্ভার সমস্যার কারণে উত্তর দিতে পারছি না। একটু পরে চেষ্টা করুন।")
+
 if __name__ == "__main__":
-    keep_alive() # এটি বটকে রেন্ডারে সচল রাখবে
+    keep_alive() # রেন্ডারের জন্য সার্ভার চালু করা
+    print("Prince Telecom Bot is Running...")
     bot.infinity_polling()
