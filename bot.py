@@ -84,3 +84,23 @@ def handle_message(message):
 
 print("Prince Telecom Bot (Groq AI) ইজ রানিং...")
 bot.infinity_polling()
+import os
+from flask import Flask
+from threading import Thread
+
+server = Flask('')
+
+@server.route('/')
+def home():
+    return "Prince Telecom Bot is Running!"
+
+def run():
+    server.run(host='0.0.0.0', port=8080)
+
+def keep_alive():
+    t = Thread(target=run)
+    t.start()
+
+if __name__ == "__main__":
+    keep_alive() # এটি বটকে রেন্ডারে সচল রাখবে
+    bot.infinity_polling()
