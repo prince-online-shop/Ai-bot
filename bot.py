@@ -7,7 +7,7 @@ from threading import Thread
 # --- কনফিগারেশন ---
 BOT_TOKEN = os.environ.get('BOT_TOKEN')
 GROQ_API_KEY = os.environ.get('GROQ_API_KEY')
-ADMIN_ID = 123456789  # @userinfobot থেকে পাওয়া আপনার আইডি এখানে দিন
+ADMIN_ID = os.environ.get('ADMIN_ID')  # @userinfobot থেকে পাওয়া আপনার আইডি এখানে দিন
 
 client = Groq(api_key=GROQ_API_KEY)
 bot = telebot.TeleBot(BOT_TOKEN)
